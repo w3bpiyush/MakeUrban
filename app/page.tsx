@@ -23,8 +23,6 @@ export default function Home() {
 
   const [latlng, setLatLng] = useState<L.LatLng | null>(null);
 
-  console.log("Current LatLng:", latlng);
-
   // Send message
   const sendMessage = async () => {
     if (!input.trim()) return;
