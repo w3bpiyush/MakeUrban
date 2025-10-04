@@ -1,15 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import MapComponent from "@/components/MapComponent";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { X } from "lucide-react";
+import dynamic from "next/dynamic";
 
 interface Message {
   sender: "user" | "bot";
   text: string;
 }
+
+const MapComponent = dynamic(() => import("@/components/MapComponent"), { ssr: false });
 
 export default function Home() {
   const [open, setOpen] = useState(false);
