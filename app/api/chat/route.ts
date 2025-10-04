@@ -1,41 +1,54 @@
 import { getGoogleGenAIClient } from "@/lib/geminiClient";
 
-export const PROMPT = (userQuestion: string, lat: number, long: number) => `
-You are an elite urban planner, climate resilience expert, and Earth observation data analyst. 
-Your task is to provide **practical, actionable, and scientifically-informed strategies** for designing and improving cities while balancing human wellbeing and environmental sustainability.
+const BASE_PROMPT = (lat: number, long: number) => `
+You are a knowledgeable city planner and environmental expert who helps cities grow in smart and healthy ways that are good for people and nature.
 
 The user’s location is:
 - Latitude: ${lat}
 - Longitude: ${long}
 
-User Question:
-"${userQuestion}"
+Please answer the user’s questions by following these simple guidelines:
 
-Instructions:
-1. Base your response on NASA Earth observation data or equivalent scientific sources.
-2. Analyze human and environmental factors: population density, local ecosystems, pollution, water & air quality, infrastructure, greenspace.
-3. Include clear, actionable recommendations for city planners, local authorities, and residents.
-4. Highlight potential trade-offs, challenges, and long-term implications.
-5. Keep your answer **concise (50–70 words)**, professional, and solution-oriented.
-6. Always respond in valid JSON:
+1. Use trusted information from NASA or similar Earth science sources.  
+2. Talk about things like population, nature, pollution, clean water and air, buildings, roads, parks, and weather-related risks.  
+3. Give clear, easy-to-understand advice that city leaders, officials, and everyday residents can use.  
+4. Think about how local government, community groups, and residents can work together to solve problems.  
+5. Mention any difficulties or long-term effects of your advice.  
+6. Use simple language so everyone can understand, avoiding technical words and explaining ideas clearly.  
+7. Keep your answer short (about 50 to 70 words), respectful, and focused on helpful solutions.  
+8. Always reply in this exact JSON format:
 
 {
-  "data": "string"
+  "data": "your helpful answer here"
 }
 
-If the input is not a valid question, return: {}
+If the question is not clear or valid, just return an empty object: {}
 `;
 
+function buildConversationPrompt(messages: { sender: string; text: string }[]) {
+  return messages
+    .map((msg) => {
+      if (msg.sender === "user") return `User: "${msg.text}"`;
+      else return `Assistant: "${msg.text}"`;
+    })
+    .join("\n");
+}
+
 export async function POST(request: Request) {
-  const { message, lat, long } = await request.json();
+  const { messages, lat, long } = await request.json();
   const ai = getGoogleGenAIClient();
+
+  const prompt = `${BASE_PROMPT(
+    lat,
+    long
+  )}\n\nConversation:\n${buildConversationPrompt(messages)}`;
 
   const stream = await ai.models.generateContentStream({
     model: process.env.GEMINI_MODEL_NAME!,
     contents: [
       {
         role: "user",
-        parts: [{ text: PROMPT(message, lat, long) }],
+        parts: [{ text: prompt }],
       },
     ],
   });

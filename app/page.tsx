@@ -27,7 +27,6 @@ export default function Home() {
   const sendMessage = async () => {
     if (!input.trim()) return;
 
-    // Add user message to state
     const newMessages: Message[] = [...messages, { sender: "user", text: input }];
     setMessages(newMessages);
     setInput("");
@@ -38,7 +37,7 @@ export default function Home() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          message: input,
+          messages: newMessages,
           lat: latlng?.lat ?? 51.505,
           long: latlng?.lng ?? -0.09,
         }),
@@ -61,6 +60,7 @@ export default function Home() {
       setLoading(false);
     }
   };
+
 
   return (
     <main className="relative min-h-screen">
