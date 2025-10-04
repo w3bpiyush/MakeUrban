@@ -21,6 +21,10 @@ export default function Home() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const [latlng, setLatLng] = useState<L.LatLng | null>(null);
+
+  console.log("Current LatLng:", latlng);
+
   // Send message
   const sendMessage = async () => {
     if (!input.trim()) return;
@@ -35,7 +39,11 @@ export default function Home() {
       const res = await fetch(`${process.env.NEXT_PUBLIC_HOST_URL}/api/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: input }),
+        body: JSON.stringify({
+          message: input,
+          lat: latlng?.lat ?? 51.505,
+          long: latlng?.lng ?? -0.09,
+        }),
       });
 
       let data: { reply: string };
@@ -58,7 +66,7 @@ export default function Home() {
 
   return (
     <main className="relative min-h-screen">
-      <MapComponent lat={51.505} long={-0.09} zoom={12} />
+      <MapComponent lat={51.505} long={-0.09} zoom={12} onLocationChange={(ll) => setLatLng(ll)} />
 
       <Button
         className="fixed bottom-4 left-4 z-[1000]"
@@ -86,8 +94,8 @@ export default function Home() {
                 >
                   <div
                     className={`max-w-[75%] px-3 py-2 rounded-xl ${msg.sender === "user"
-                        ? "bg-blue-500 text-white"
-                        : "bg-gray-200 text-gray-800"
+                      ? "bg-blue-500 text-white"
+                      : "bg-gray-200 text-gray-800"
                       }`}
                   >
                     {msg.text}

@@ -8,6 +8,7 @@ interface MapProps {
   lat: number;
   long: number;
   zoom: number;
+  onLocationChange?: (latlng: L.LatLng) => void;
 }
 
 import type { LatLng } from "leaflet";
@@ -17,7 +18,7 @@ const markerIcon = new L.Icon({
   iconSize: [25, 41],
 });
 
-function LocationMarker() {
+function LocationMarker({ onLocationChange }: { onLocationChange?: (latlng: L.LatLng) => void }) {
   const [position, setPosition] = useState<LatLng | null>(null)
   const map = useMapEvents({
     click() {
@@ -26,15 +27,14 @@ function LocationMarker() {
     locationfound(e) {
       setPosition(e.latlng)
       map.flyTo(e.latlng, map.getZoom()) // smoothly center map to found location
+      if (onLocationChange) onLocationChange(e.latlng);
     },
   })
 
-  return position === null ? null : (
-    <Marker position={position} icon={markerIcon}></Marker>
-  )
+    return position ? <Marker position={position} icon={markerIcon} /> : null;
 }
 
-const MapComponent = ({ lat, long, zoom }: MapProps) => {
+const MapComponent = ({ lat, long, zoom, onLocationChange }: MapProps) => {
   const [center, setCenter] = useState<[number, number]>([lat, long]);
 
   return (
@@ -43,7 +43,7 @@ const MapComponent = ({ lat, long, zoom }: MapProps) => {
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      <LocationMarker />
+      <LocationMarker onLocationChange={onLocationChange} />
     </MapContainer>
   );
 };
