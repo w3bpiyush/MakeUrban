@@ -1,6 +1,7 @@
-import { getGoogleGenAIClient } from "@/lib/geminiClient";
+export async function POST(request: Request) {
+  const { messages, lat, long } = await request.json();
 
-const BASE_PROMPT = (lat: number, long: number) => `
+  const BASE_PROMPT = (lat: number, long: number) => `
 You are a knowledgeable city planner and environmental expert who helps cities grow in smart and healthy ways that are good for people and nature.
 
 The user’s location is:
@@ -25,39 +26,40 @@ Please answer the user’s questions by following these simple guidelines:
 If the question is not clear or valid, just return an empty object: {}
 `;
 
-function buildConversationPrompt(messages: { sender: string; text: string }[]) {
-  return messages
-    .map((msg) => {
-      if (msg.sender === "user") return `User: "${msg.text}"`;
-      else return `Assistant: "${msg.text}"`;
-    })
-    .join("\n");
-}
-
-export async function POST(request: Request) {
-  const { messages, lat, long } = await request.json();
-  const ai = getGoogleGenAIClient();
+  function buildConversationPrompt(
+    messages: { sender: string; text: string }[]
+  ) {
+    return messages
+      .map((msg) =>
+        msg.sender === "user"
+          ? `User: "${msg.text}"`
+          : `Assistant: "${msg.text}"`
+      )
+      .join("\n");
+  }
 
   const prompt = `${BASE_PROMPT(
     lat,
     long
   )}\n\nConversation:\n${buildConversationPrompt(messages)}`;
 
-  const stream = await ai.models.generateContentStream({
-    model: process.env.GEMINI_MODEL_NAME!,
-    contents: [
-      {
-        role: "user",
-        parts: [{ text: prompt }],
-      },
-    ],
+  // Call OpenRouter
+  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: `${process.env.OPENROUTER_MODEL_NAME}`,
+      messages: [{ role: "user", content: prompt }],
+    }),
   });
 
-  let rawText = "";
-  for await (const chunk of stream) {
-    if (chunk.text) rawText += chunk.text;
-  }
+  const data = await res.json();
 
+  // Extract assistant’s reply
+  const rawText = data.choices?.[0]?.message?.content || "";
   const parsed = rawText.match(/\{[\s\S]*\}/);
   const reply = parsed ? JSON.parse(parsed[0]).data : "";
 
