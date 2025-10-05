@@ -1,36 +1,76 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## Project name and description
 
-## Getting Started
+MakeUrban — AI-Powered Urban Planning Assistant
 
-First, run the development server:
+MakeUrban helps planners and citizens assess heat risk and air quality, then generates concise, actionable city improvement plans with AI. It combines live geocoding, an interactive map, environmental overlays, and a Gemini-powered assistant.
 
+## Tech stack
+- Next.js 15 (App Router), React 19
+- Tailwind CSS 4; lightweight UI primitives (button, input, textarea)
+- React Leaflet with OpenStreetMap tiles
+- Google Gemini via `@google/genai`
+- TypeScript, ESLint
+
+## What’s implemented
+- City search via Open‑Meteo Geocoding; map fly-to + marker
+- Aerosol risk overlay (green/yellow/red) around selected coordinates
+- Chat assistant (Gemini) producing concise, numeric, actionable guidance
+- Parallel heat/aerosol fetch inside a single API route (`/api/chat`)
+- Tailwind 4 styling and responsive layout
+
+## Architecture overview
+- `app/page.tsx`: Main UI with map, city search, aerosol fetch, and chat modal
+- `components/MapComponent.tsx`: Map container, tile layer, fly-to marker
+- `components/MapLayersComponent.tsx`: Colored rectangles for aerosol predictions + radius circle
+- `app/api/chat/route.ts`: Fetches heat index and aerosol data, builds prompt, streams Gemini, returns JSON-backed reply
+- `lib/coordsUtils.ts`: Geographic helpers (km-to-deg conversions, bounding boxes)
+- `components/ui/*`: Minimal reusable UI components
+
+## Limitation
+- Results may be approximate due to limited training/data coverage
+- Gemini responses may be imperfect/incorrect; use judgment for decisions
+- External APIs on free tiers may be slow or rate-limited
+- No persistence (chat history, bookmarks)
+- Limited error handling for upstream failures
+
+## Setting up project
+1) Install dependencies
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2) Create `.env.local`
+```bash
+# Public (browser)
+NEXT_PUBLIC_HOST_URL=
+NEXT_PUBLIC_GEOCODING_API_URL=
+NEXT_PUBLIC_HOST_AEROSOL_API_URL=
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+# Server-side (consumed by API route)
+NEXT_PUBLIC_HOST_HEAT_API_URL=
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# Gemini
+GEMINI_API_KEY=YOUR_GEMINI_API_KEY
+GEMINI_MODEL_NAME=models/gemini-1.5-flash
+```
 
-## Learn More
+3) Run the app
+```bash
+npm run dev
+# open http://localhost:3000
+```
 
-To learn more about Next.js, take a look at the following resources:
+## License
+MIT
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Credits
+- Map tiles © OpenStreetMap contributors
+- Geocoding by Open‑Meteo (default)
+- UI patterns inspired by shadcn/ui
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Future approaches
+- Data: integrate CAMS/Copernicus/Sentinel, vulnerability indices, time-series forecasts
+- UX: legends, tooltips, clickable tiles, draw AOIs, export reports
+- Assistant: multi-turn planning templates, CSV/GeoJSON upload, shareable links
+- Reliability: queue/retries, circuit breakers, observability, quotas/rate limits
+- Quality: unit/e2e tests, CI, preview deployments
