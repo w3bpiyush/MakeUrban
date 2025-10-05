@@ -80,8 +80,6 @@ export async function POST(request: Request) {
       aerosolData
     )}\nConversation:\n${conversation}`;
 
-    console.log("Generated Prompt:", prompt);
-
     // Initialize AI
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
     const model = process.env.GEMINI_MODEL_NAME;

@@ -105,7 +105,6 @@ export default function Home() {
     try {
       const { latStart, latEnd, lngStart, lngEnd } = increaseLatLng(lat, long);
       const url = `${process.env.NEXT_PUBLIC_HOST_AEROSOL_API_URL}?latstart=${latStart}&latend=${latEnd}&lonstart=${lngStart}&lonend=${lngEnd}`;
-      console.log("Fetching aerosol data from:", url);
 
       const res = await fetch(url);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
