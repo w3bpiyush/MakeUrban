@@ -15,6 +15,13 @@ interface Message {
   text: string;
 }
 
+interface AerosolPrediction {
+  lat: number;
+  lon: number;
+  predicted_aerosol: number;
+  year: number;
+}
+
 export default function Home() {
   // --- UI States ---
   const [openChat, setOpenChat] = useState(false);
@@ -36,7 +43,7 @@ export default function Home() {
   const [selectedCity, setSelectedCity] = useState<{ lat: number; long: number } | null>(null);
 
   // --- Aerosol State ---
-  const [aerosolData, setAerosolData] = useState<any[]>([]);
+  const [aerosolData, setAerosolData] = useState<AerosolPrediction[]>([]);
   const [aerosolLoading, setAerosolLoading] = useState(false);
 
   // --- Handlers ---
@@ -199,11 +206,7 @@ export default function Home() {
             </div>
 
             <div className="flex-1 p-4 flex flex-col gap-3">
-              <Input
-                placeholder="Enter city name..."
-                value={cityInput}
-                onChange={(e) => setCityInput(e.target.value)}
-              />
+              <Input placeholder="Enter city name..." value={cityInput} onChange={(e) => setCityInput(e.target.value)} />
               <Button onClick={searchCity} disabled={cityLoading} className="w-full">
                 {cityLoading ? "Searching..." : "Search"}
               </Button>
