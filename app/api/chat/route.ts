@@ -4,9 +4,30 @@ import { increaseLatLng } from "@/lib/coordsUtils";
 const HEAT_API_URL = process.env.NEXT_PUBLIC_HOST_HEAT_API_URL;
 const AEROSOL_API_URL = process.env.NEXT_PUBLIC_HOST_AEROSOL_API_URL;
 
+interface AerosolPrediction {
+  lat: number;
+  lon: number;
+  predicted_aerosol: number;
+  year: number;
+}
+
+interface AerosolData {
+  predictions: AerosolPrediction[];
+}
+
+interface Message {
+  sender: "user" | "assistant";
+  text: string;
+}
+
 export async function POST(request: Request) {
   try {
-    const { messages, lat, long } = await request.json();
+    const {
+      messages,
+      lat,
+      long,
+    }: { messages: Message[]; lat: number; long: number } =
+      await request.json();
 
     const { latStart, latEnd, lngStart, lngEnd } = increaseLatLng(lat, long);
 
@@ -22,51 +43,51 @@ export async function POST(request: Request) {
       throw new Error("Failed to fetch external data.");
     }
 
-    const heatData = await heatRes.json();
-    const aerosolData = await aerosolRes.json();
+    const heatData: { heat_index: number } = await heatRes.json();
+    const aerosolData: AerosolData = await aerosolRes.json();
 
     // Build prompt dynamically
     const BASE_PROMPT = (
       lat: number,
       long: number,
       heatIndex: number,
-      aerosol: any
+      aerosol: AerosolData
     ) => `
-  You are an expert city planner and environmental analyst.
-  
-  User location:
-  - Latitude: ${lat}
-  - Longitude: ${long}
-  
-  Heat Index: ${heatIndex}
-  
-  Aerosol Predictions:
-  ${aerosol.predictions
-    .map(
-      (p: any) =>
-        `- Lat: ${p.lat}, Lon: ${p.lon}, Predicted Aerosol: ${p.predicted_aerosol}, Year: ${p.year}`
-    )
-    .join("\n")}
-  
-  Tasks:
-  1. Infer the city or town name dynamically from the coordinates.
-  2. Analyze the user question and classify its intent as one of: answering, reasoning, explaining, suggesting.
-  3. Tailor your response tone and style based on the intent classification.
-  4. Provide actionable advice on population, pollution, infrastructure, nature, weather risks, etc.
-  5. Highlight challenges or long-term impacts.
-  6. Based on this, draw a proper plan for the city. Give actual numerical data:
-     - How many trees should be planted in danger zones
-     - Where hospitals and healthcare centres should be built
-     - Maximum daily fuel consumption by vehicles
-     - Best precaution measures residents should take
-     Give approximate data using the received heat and aerosol data.
-  7. Keep responses concise (50–70 words)
-  8. Always respond in JSON format: { "data": "..." }
-  9. If question is unclear, respond with {}
-  `;
+You are an expert city planner and environmental analyst.
+
+User location:
+- Latitude: ${lat}
+- Longitude: ${long}
+
+Heat Index: ${heatIndex}
+
+Aerosol Predictions:
+${aerosol.predictions
+  .map(
+    (p: AerosolPrediction) =>
+      `- Lat: ${p.lat}, Lon: ${p.lon}, Predicted Aerosol: ${p.predicted_aerosol}, Year: ${p.year}`
+  )
+  .join("\n")}
+
+Tasks:
+1. Infer the city or town name dynamically from the coordinates.
+2. Analyze the user question and classify its intent as one of: answering, reasoning, explaining, suggesting.
+3. Tailor your response tone and style based on the intent classification.
+4. Provide actionable advice on population, pollution, infrastructure, nature, weather risks, etc.
+5. Highlight challenges or long-term impacts.
+6. Based on this, draw a proper plan for the city. Give actual numerical data:
+   - How many trees should be planted in danger zones
+   - Where hospitals and healthcare centres should be built
+   - Maximum daily fuel consumption by vehicles
+   - Best precaution measures residents should take
+   Give approximate data using the received heat and aerosol data.
+7. Keep responses concise (50–70 words)
+8. Always respond in JSON format: { "data": "..." }
+9. If question is unclear, respond with {}
+`;
 
     const conversation = messages
-      .map((msg: any) =>
+      .map((msg: Message) =>
         msg.sender === "user"
           ? `User: "${msg.text}"`
           : `Assistant: "${msg.text}"`
