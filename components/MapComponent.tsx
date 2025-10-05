@@ -1,49 +1,54 @@
-"use client"
-import { MapContainer, TileLayer, useMapEvents, Marker } from "react-leaflet";
-import "leaflet/dist/leaflet.css";
-import React, { useState } from "react";
+"use client";
+
+import React, { useEffect, useState } from "react";
+import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
 import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import MapLayersComponent from "./MapLayersComponent";
+
+interface Aerosol {
+  lat: number;
+  lon: number;
+  predicted_aerosol: number;
+  year: number;
+}
 
 interface MapProps {
   lat: number;
   long: number;
   zoom: number;
-  onLocationChange?: (latlng: L.LatLng) => void;
+  aerosolData?: Aerosol[];
 }
-
-import type { LatLng } from "leaflet";
 
 const markerIcon = new L.Icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
   iconSize: [25, 41],
 });
 
-function LocationMarker({ onLocationChange }: { onLocationChange?: (latlng: L.LatLng) => void }) {
-  const [position, setPosition] = useState<LatLng | null>(null)
-  const map = useMapEvents({
-    click() {
-      map.locate()  // trigger browser geolocation on click
-    },
-    locationfound(e) {
-      setPosition(e.latlng)
-      map.flyTo(e.latlng, map.getZoom()) // smoothly center map to found location
-      if (onLocationChange) onLocationChange(e.latlng);
-    },
-  })
+const FlyMarker: React.FC<{ lat: number; long: number }> = ({ lat, long }) => {
+  const map = useMap();
+  const [position, setPosition] = useState<L.LatLng | null>(null);
 
-    return position ? <Marker position={position} icon={markerIcon} /> : null;
-}
+  useEffect(() => {
+    const newPos = new L.LatLng(lat, long);
+    setPosition(newPos);
+    map.flyTo(newPos, map.getZoom());
+  }, [lat, long, map]);
 
-const MapComponent = ({ lat, long, zoom, onLocationChange }: MapProps) => {
-  const [center, setCenter] = useState<[number, number]>([lat, long]);
+  return position ? <Marker position={position} icon={markerIcon} /> : null;
+};
 
+const MapComponent = ({
+  lat,
+  long,
+  zoom,
+  aerosolData = [],
+}: MapProps) => {
   return (
-    <MapContainer center={center} zoom={zoom} className="h-screen w-full">
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
-      <LocationMarker onLocationChange={onLocationChange} />
+    <MapContainer center={[lat, long]} zoom={zoom} className="h-screen w-full">
+      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+      <MapLayersComponent aerosolData={aerosolData} lat={lat} long={long} />
+      <FlyMarker lat={lat} long={long} />
     </MapContainer>
   );
 };

@@ -1,69 +1,116 @@
+import { GoogleGenAI } from "@google/genai";
+import { increaseLatLng } from "@/lib/coordsUtils";
+
+const HEAT_API_URL = process.env.NEXT_PUBLIC_HOST_HEAT_API_URL;
+const AEROSOL_API_URL = process.env.NEXT_PUBLIC_HOST_AEROSOL_API_URL;
+
 export async function POST(request: Request) {
-  const { messages, lat, long } = await request.json();
+  try {
+    const { messages, lat, long } = await request.json();
 
-  const BASE_PROMPT = (lat: number, long: number) => `
-You are a knowledgeable city planner and environmental expert who helps cities grow in smart and healthy ways that are good for people and nature.
+    const { latStart, latEnd, lngStart, lngEnd } = increaseLatLng(lat, long);
 
-The user’s location is:
-- Latitude: ${lat}
-- Longitude: ${long}
+    // Fetch heat and aerosol data in parallel
+    const [heatRes, aerosolRes] = await Promise.all([
+      fetch(`${HEAT_API_URL}?lat=${lat}&lon=${long}`),
+      fetch(
+        `${AEROSOL_API_URL}?latstart=${latStart}&latend=${latEnd}&lonstart=${lngStart}&lonend=${lngEnd}`
+      ),
+    ]);
 
-Please answer the user’s questions by following these simple guidelines:
+    if (!heatRes.ok || !aerosolRes.ok) {
+      throw new Error("Failed to fetch external data.");
+    }
 
-1. Use trusted information from NASA or similar Earth science sources.  
-2. Talk about things like population, nature, pollution, clean water and air, buildings, roads, parks, and weather-related risks.  
-3. Give clear, easy-to-understand advice that city leaders, officials, and everyday residents can use.  
-4. Think about how local government, community groups, and residents can work together to solve problems.  
-5. Mention any difficulties or long-term effects of your advice.  
-6. Use simple language so everyone can understand, avoiding technical words and explaining ideas clearly.  
-7. Keep your answer short (about 50 to 70 words), respectful, and focused on helpful solutions.  
-8. Always reply in this exact JSON format:
+    const heatData = await heatRes.json();
+    const aerosolData = await aerosolRes.json();
 
-{
-  "data": "your helpful answer here"
-}
+    // Build prompt dynamically
+    const BASE_PROMPT = (
+      lat: number,
+      long: number,
+      heatIndex: number,
+      aerosol: any
+    ) => `
+  You are an expert city planner and environmental analyst.
+  
+  User location:
+  - Latitude: ${lat}
+  - Longitude: ${long}
+  
+  Heat Index: ${heatIndex}
+  
+  Aerosol Predictions:
+  ${aerosol.predictions
+    .map(
+      (p: any) =>
+        `- Lat: ${p.lat}, Lon: ${p.lon}, Predicted Aerosol: ${p.predicted_aerosol}, Year: ${p.year}`
+    )
+    .join("\n")}
+  
+  Tasks:
+  1. Infer the city or town name dynamically from the coordinates.
+  2. Analyze the user question and classify its intent as one of: answering, reasoning, explaining, suggesting.
+  3. Tailor your response tone and style based on the intent classification.
+  4. Provide actionable advice on population, pollution, infrastructure, nature, weather risks, etc.
+  5. Highlight challenges or long-term impacts.
+  6. Based on this, draw a proper plan for the city. Give actual numerical data:
+     - How many trees should be planted in danger zones
+     - Where hospitals and healthcare centres should be built
+     - Maximum daily fuel consumption by vehicles
+     - Best precaution measures residents should take
+     Give approximate data using the received heat and aerosol data.
+  7. Keep responses concise (50–70 words)
+  8. Always respond in JSON format: { "data": "..." }
+  9. If question is unclear, respond with {}
+  `;
 
-If the question is not clear or valid, just return an empty object: {}
-`;
-
-  function buildConversationPrompt(
-    messages: { sender: string; text: string }[]
-  ) {
-    return messages
-      .map((msg) =>
+    const conversation = messages
+      .map((msg: any) =>
         msg.sender === "user"
           ? `User: "${msg.text}"`
           : `Assistant: "${msg.text}"`
       )
       .join("\n");
+
+    const prompt = `${BASE_PROMPT(
+      lat,
+      long,
+      heatData.heat_index,
+      aerosolData
+    )}\nConversation:\n${conversation}`;
+
+    console.log("Generated Prompt:", prompt);
+
+    // Initialize AI
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    const model = process.env.GEMINI_MODEL_NAME;
+    if (!model)
+      throw new Error("GEMINI_MODEL_NAME environment variable not set.");
+
+    const stream = await ai.models.generateContentStream({
+      model,
+      config: { thinkingConfig: { thinkingBudget: -1 } },
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+    });
+
+    let rawText = "";
+    for await (const chunk of stream) {
+      if (chunk.text) rawText += chunk.text;
+    }
+
+    // Parse JSON safely
+    const parsed = rawText.match(/\{[\s\S]*\}/);
+    const reply = parsed ? JSON.parse(parsed[0]).data : "";
+
+    return new Response(JSON.stringify({ reply }), {
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (err) {
+    console.error("Error in POST handler:", err);
+    return new Response(JSON.stringify({ reply: "" }), {
+      headers: { "Content-Type": "application/json" },
+      status: 500,
+    });
   }
-
-  const prompt = `${BASE_PROMPT(
-    lat,
-    long
-  )}\n\nConversation:\n${buildConversationPrompt(messages)}`;
-
-  // Call OpenRouter
-  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: `${process.env.OPENROUTER_MODEL_NAME}`,
-      messages: [{ role: "user", content: prompt }],
-    }),
-  });
-
-  const data = await res.json();
-
-  // Extract assistant’s reply
-  const rawText = data.choices?.[0]?.message?.content || "";
-  const parsed = rawText.match(/\{[\s\S]*\}/);
-  const reply = parsed ? JSON.parse(parsed[0]).data : "";
-
-  return new Response(JSON.stringify({ reply }), {
-    headers: { "Content-Type": "application/json" },
-  });
 }
