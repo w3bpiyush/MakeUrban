@@ -69,8 +69,12 @@ MIT
 - UI patterns inspired by shadcn/ui
 
 ## Future approaches
-- Data: integrate CAMS/Copernicus/Sentinel, vulnerability indices, time-series forecasts
-- UX: legends, tooltips, clickable tiles, draw AOIs, export reports
-- Assistant: multi-turn planning templates, CSV/GeoJSON upload, shareable links
-- Reliability: queue/retries, circuit breakers, observability, quotas/rate limits
-- Quality: unit/e2e tests, CI, preview deployments
+Turning limitations into a roadmap:
+- Improve accuracy: integrate CAMS/Copernicus/Sentinel and local authority datasets; enrich training signals
+- Strengthen AI reliability: add system prompts, validations, and guardrails; show confidence summaries
+- Speed and stability: cache responses, add background prefetching, queues/retries, and rate‑limit handling
+- Add persistence: save chat sessions, user preferences, and bookmarked locations
+- Robustness: centralized error handling, user‑friendly fallbacks, health checks
+- Testability: unit/e2e tests, CI, preview deploys; synthetic data tests for edge cases
+- Rich mapping: legends, tooltips, clickable tiles, time‑series controls, draw AOIs, export reports
+- Productization: shareable links with encoded state, roles/quotas for public demos
