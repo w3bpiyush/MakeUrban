@@ -29,6 +29,8 @@ export async function POST(request: Request) {
     }: { messages: Message[]; lat: number; long: number } =
       await request.json();
 
+      console.log(lat,long)
+
     const { latStart, latEnd, lngStart, lngEnd } = increaseLatLng(lat, long);
 
     // Fetch heat and aerosol data in parallel

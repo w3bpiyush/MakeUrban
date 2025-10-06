@@ -49,7 +49,7 @@ const MapComponent = ({
   return (
     <MapContainer center={[lat, long]} zoom={zoom} className="h-screen w-full">
       <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-      <MapLayersComponent aerosolData={aerosolData} lat={lat} long={long} year={year} />
+      <MapLayersComponent aerosolData={aerosolData} year={year} />
       <FlyMarker lat={lat} long={long} />
     </MapContainer>
   );

@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { X } from "lucide-react";
-import { increaseLatLng } from "@/lib/coordsUtils";
 
 const MapComponent = dynamic(() => import("@/components/MapComponent"), { ssr: false });
 
@@ -38,8 +37,12 @@ export default function Home() {
   const [cityError, setCityError] = useState<string | null>(null);
 
   // --- Map State ---
-  const [lat, setLat] = useState(26.66371);
-  const [long, setLong] = useState(87.27403);
+  const [lat, setLat] = useState(27.6941137);
+  const [long, setLong] = useState(85.2883183);
+  const [latStart, setLatStart] = useState(27.6679494);
+  const [longStart, setLongStart] = useState(85.2771438);
+  const [latEnd, setLatEnd] = useState(27.7500026);
+  const [longEnd, setLongEnd] = useState(85.3731257);
   const [year, setYear] = useState(new Date().getFullYear());
   const [showswitch, setShowSwitch] = useState(false);
 
@@ -88,15 +91,20 @@ export default function Home() {
 
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_GEOCODING_API_URL}?name=${encodeURIComponent(cityInput)}&count=10&language=en&format=json`
+        `${process.env.NEXT_PUBLIC_GEOCODING_API_URL}?q=${encodeURIComponent(cityInput)}&key=${process.env.NEXT_PUBLIC_GEOCODING_API_KEY}`
       );
       const data = await res.json();
 
+
       if (data.results?.length) {
         const city = data.results[0];
-        setLat(city.latitude);
-        setLong(city.longitude);
-        setSelectedCity({ lat: city.latitude, long: city.longitude });
+        setLatStart(city.bounds.southwest.lat);
+        setLongStart(city.bounds.southwest.lng);
+        setLatEnd(city.bounds.northeast.lat);
+        setLongEnd(city.bounds.northeast.lng);
+        setLat(city.geometry.lat);
+        setLong(city.geometry.lng);
+        setSelectedCity({ lat: city.geometry.lat, long: city.geometry.lng });
         setOpenCity(false);
       } else {
         setCityError("City not found.");
@@ -113,9 +121,8 @@ export default function Home() {
     setAerosolLoading(true);
 
     try {
-      const { latStart, latEnd, lngStart, lngEnd } = increaseLatLng(lat, long);
 
-      const url = `${process.env.NEXT_PUBLIC_HOST_AEROSOL_API_URL}?latstart=${latStart}&latend=${latEnd}&lonstart=${lngStart}&lonend=${lngEnd}&year=${year}`;
+      const url = `${process.env.NEXT_PUBLIC_HOST_AEROSOL_API_URL}?latstart=${latStart}&latend=${latEnd}&lonstart=${longStart}&lonend=${longEnd}&year=${year}`;
       console.log("Fetching aerosol data from URL:", url);
       const res = await fetch(url);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);

@@ -1,9 +1,8 @@
 "use client";
 
 import React from "react";
-import { LayerGroup, Circle, Rectangle } from "react-leaflet";
+import { LayerGroup, Rectangle } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import { getBoundingBox } from "@/lib/coordsUtils";
 
 interface AerosolPrediction {
   lat: number;
@@ -14,8 +13,6 @@ interface AerosolPrediction {
 
 interface MapLayersProps {
   aerosolData: AerosolPrediction[];
-  lat: number;
-  long: number;
   year: number;
 }
 
@@ -59,27 +56,17 @@ const getAerosolColor = (
 
 
 
-const MapLayersComponent: React.FC<MapLayersProps> = ({ aerosolData, lat, long, year }) => {
+const MapLayersComponent: React.FC<MapLayersProps> = ({ aerosolData, year }) => {
   if (!aerosolData?.length) return null;
   console.log("Rendering aerosol data:", aerosolData);
 
-  const aerosolBox = getBoundingBox(lat, long, 2);
-  const circleOptions = { color: "green", fillOpacity: 0.1 };
   const rectangleSize = 0.005;
   const aerosols = aerosolData.map(p => p.predicted_aerosol);
-const minAerosol = Math.min(...aerosols);
-const maxAerosol = Math.max(...aerosols);
+  const minAerosol = Math.min(...aerosols);
+  const maxAerosol = Math.max(...aerosols);
 
   return (
     <LayerGroup>
-      {/* Large circle around the center */}
-      <Circle
-        center={[aerosolBox.center.lat, aerosolBox.center.lng]}
-        pathOptions={circleOptions}
-        radius={7000} // meters
-      />
-
-
       {/* Rectangles for aerosol predictions */}
       {aerosolData.map((item, idx) => {
         const bounds: [[number, number], [number, number]] = [
@@ -95,6 +82,7 @@ const maxAerosol = Math.max(...aerosols);
             pathOptions={{
               color: getAerosolColor(item.predicted_aerosol, minAerosol, maxAerosol, year),
               fillOpacity: 0.4,
+              stroke: false
               
             }}
           />
