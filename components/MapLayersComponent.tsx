@@ -26,35 +26,31 @@ const getAerosolColor = (
   year: number,
   baseYear = 2025
 ) => {
-  // If min exceeds 40, no green: start minHue from yellow (60 degrees)
   const minHueStart = min > 40 ? 60 : 120;
 
-  // If max exceeds 60, no orange/yellow: maxHue start closer to red (10 degrees)
   const maxHueStart = max > 60 ? 10 : 20;
 
-  // Normalize min and max factors (scaled 0 to 1)
+
   const minFactor = Math.min(min / 100, 1);
   const maxFactor = Math.min(max / 100, 1);
 
-  // Adjust minHue: shift from green/yellow based on minFactor
+
   const minHue = minHueStart - minFactor * (min > 40 ? 30 : 60);
 
-  // Adjust maxHue: shift from orange/red to pure red based on maxFactor
+
   const maxHue = maxHueStart - maxFactor * maxHueStart;
 
-  // Calculate normalized value within range (avoid division by zero)
+
   const range = max - min || 1;
   const normValue = (value - min) / range;
 
-  // Interpolate hue between minHue and maxHue
+
   let hue = minHue + normValue * (maxHue - minHue);
 
-  // Add year shift pushing overall hue closer to red (0 degree)
-  // Year factor capped at 1, adjust multiplier for speed of red shift
-  const yearShift = Math.min((year - baseYear) * 5, 60); // max shift 60 degrees towards red
+  const yearShift = Math.min((year - baseYear) * 5, 60); 
   hue = Math.max(0, hue - yearShift);
 
-  // Optionally adjust saturation (reduce at higher years for subtle effect)
+
   const yearFactor = Math.min((year - baseYear) * 0.05, 0.5);
   const saturation = 100 - yearFactor * 100;
 
