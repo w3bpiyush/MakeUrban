@@ -81,9 +81,9 @@ Tasks:
    - Maximum daily fuel consumption by vehicles
    - Best precaution measures residents should take
    Give approximate data using the received heat and aerosol data.
-7. Keep responses concise (50–70 words)
 8. Always respond in JSON format: { "data": "..." }
 9. If question is unclear, respond with {}
+(write in a single paragraph, no lists, no more than 200 words)
 `;
 
     const conversation = messages

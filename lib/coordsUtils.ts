@@ -7,8 +7,8 @@ const kmToDeg = (km: number) => km / 111;
 export const increaseLatLng = (
   lat: number,
   lng: number,
-  incrementLatKm = 2,
-  incrementLngKm = 2
+  incrementLatKm = 5,
+  incrementLngKm = 5
 ): { latStart: number; latEnd: number; lngStart: number; lngEnd: number } => {
   const latIncrement = kmToDeg(incrementLatKm);
   const lngIncrement = kmToDeg(incrementLngKm) / Math.cos((lat * Math.PI) / 180);
@@ -27,7 +27,7 @@ export const increaseLatLng = (
 export const getBoundingBox = (
   lat: number,
   lng: number,
-  radiusKm = 5
+  radiusKm = 8
 ): {
   latStart: number;
   latEnd: number;

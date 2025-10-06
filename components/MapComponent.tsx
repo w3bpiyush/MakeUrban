@@ -18,6 +18,7 @@ interface MapProps {
   long: number;
   zoom: number;
   aerosolData?: Aerosol[];
+  year:number;
 }
 
 const markerIcon = new L.Icon({
@@ -43,11 +44,12 @@ const MapComponent = ({
   long,
   zoom,
   aerosolData = [],
+  year =new Date().getFullYear(),
 }: MapProps) => {
   return (
     <MapContainer center={[lat, long]} zoom={zoom} className="h-screen w-full">
       <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-      <MapLayersComponent aerosolData={aerosolData} lat={lat} long={long} />
+      <MapLayersComponent aerosolData={aerosolData} lat={lat} long={long} year={year} />
       <FlyMarker lat={lat} long={long} />
     </MapContainer>
   );

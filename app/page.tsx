@@ -40,6 +40,9 @@ export default function Home() {
   // --- Map State ---
   const [lat, setLat] = useState(26.66371);
   const [long, setLong] = useState(87.27403);
+  const [year, setYear] = useState(new Date().getFullYear());
+  const [showswitch, setShowSwitch] = useState(false);
+
   const [selectedCity, setSelectedCity] = useState<{ lat: number; long: number } | null>(null);
 
   // --- Aerosol State ---
@@ -111,13 +114,19 @@ export default function Home() {
 
     try {
       const { latStart, latEnd, lngStart, lngEnd } = increaseLatLng(lat, long);
-      const url = `${process.env.NEXT_PUBLIC_HOST_AEROSOL_API_URL}?latstart=${latStart}&latend=${latEnd}&lonstart=${lngStart}&lonend=${lngEnd}`;
 
+      const url = `${process.env.NEXT_PUBLIC_HOST_AEROSOL_API_URL}?latstart=${latStart}&latend=${latEnd}&lonstart=${lngStart}&lonend=${lngEnd}&year=${year}`;
+      console.log("Fetching aerosol data from URL:", url);
       const res = await fetch(url);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
 
       const data = await res.json();
-      if (data.predictions) setAerosolData(data.predictions);
+      console.log("Fetched aerosol data:", data.predictions);
+      if (data.predictions) {
+        setAerosolData(data.predictions);
+        setShowSwitch(true);
+      }
+
     } catch (error) {
       console.error("Error fetching aerosol data:", error);
     } finally {
@@ -128,7 +137,7 @@ export default function Home() {
   // --- Render ---
   return (
     <main className="relative min-h-screen">
-      <MapComponent lat={lat} long={long} zoom={15} aerosolData={aerosolData} />
+      <MapComponent lat={lat} long={long} zoom={15} aerosolData={aerosolData} year={year} />
 
       {/* Action Buttons */}
       <div className="fixed bottom-4 left-4 z-[1000] flex flex-wrap gap-2 max-w-[95vw]">
@@ -141,6 +150,18 @@ export default function Home() {
             {btn.label}
           </Button>
         ))}
+
+        {showswitch && 
+          <div className="flex flex-wrap gap-x-1.5">
+            {!(year ==  new Date().getFullYear()) && <Button key="prev" className="flex-1 min-w-[120px]" onClick={() => { setYear(year - 1); handleCheckAerosol() }}>
+            {!(year-1 ==  new Date().getFullYear()) ? `< Prediction for ${year-1}`: "<2025" }
+            </Button>}
+            <Button key="next" className="flex-1 min-w-[120px]" onClick={() => {setYear(year + 1);handleCheckAerosol() }}>
+              {`Predictions for ${year+1} >`}
+            </Button>
+          </div>
+
+        }
       </div>
 
       {/* Chat Modal */}
@@ -153,6 +174,8 @@ export default function Home() {
                 <X className="h-5 w-5 text-gray-600 hover:text-gray-800" />
               </button>
             </div>
+
+
 
             <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
               {messages.map((msg, idx) => (
